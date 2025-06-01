@@ -22,21 +22,21 @@ aws_report_generator/
 
 ├── main.py # Main entry point
 
+├── data collectors/
+
+│ ├── ec2.py #EC2 and backup metric collection
+
+│ ├── rds.py #RDS and backup metric collection
+
+│ ├── eks.py #EKS cluster info
+
+│ ├── iam.py #IAM user info
+
 ├── utils/
 
-│ ├── ec2_metrics.py #EC2 metric collection
+│ ├──plots.py #Monthly graph plotting (matplotlib)
 
-│ ├── rds_metrics.py #RDS metric collection
-
-│ ├── eks_info.py #EKS cluster info
-
-│ ├── iam_info.py #IAM user info
-
-│ ├── backup_info.py #Backup/snapshot checking
-
-│ ├── graph_plotting.py #Monthly graph plotting (matplotlib)
-
-│ ├── pptx_utils.py #PowerPoint editing helpers
+│ ├── ppt_edit.py #PowerPoint editing helpers
 
 ├── template/
 
