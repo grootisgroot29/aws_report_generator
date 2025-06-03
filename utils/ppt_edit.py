@@ -2,6 +2,9 @@ from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 import os
+from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
+
+import matplotlib.pyplot as plt
 
 from pptx.util import Inches
 
@@ -106,8 +109,55 @@ def adjust_table_rows(table, data_count):
                         break
             except Exception as e:
                 print(f"Error removing rows: {e}")
+def update_resource_counts_on_slide(prs, slide_index, ec2_count, rds_count, total_bill_amount=None):
+    slide = prs.slides[slide_index]
 
+    def update_shape_text(shape):
+        if not shape.has_text_frame:
+            return
 
+        raw_text = shape.text_frame.text.strip()
+        raw_text_lower = raw_text.lower()
+
+        def set_text_with_format(new_text):
+            text_frame = shape.text_frame
+            text_frame.clear()
+            p = text_frame.paragraphs[0]
+            run = p.add_run()
+            run.text = new_text
+
+            # Set font
+            font = run.font
+            font.name = 'Arial'
+            font.size = Pt(20)
+
+            # Set alignment
+            p.alignment = PP_ALIGN.CENTER
+
+        print(f"[DEBUG] Found shape text: '{raw_text}'")
+
+        if "number of ec2" in raw_text_lower:
+            set_text_with_format(f"Number of ec2 instances: {ec2_count}")
+            print("➡️  Updated EC2 count")
+        elif "no. of databases" in raw_text_lower:
+            set_text_with_format(f"No. Of Databases: {rds_count}")
+            print("➡️  Updated RDS count")
+        elif "total bill amount" in raw_text_lower and total_bill_amount is not None:
+            set_text_with_format(f"Total Bill Amount: ${total_bill_amount:,.2f}")
+            print("➡️  Updated Billing Amount")
+
+    for shape in slide.shapes:
+        if shape.shape_type == 6:  # Group shape
+            for sub_shape in shape.shapes:
+                update_shape_text(sub_shape)
+        else:
+            update_shape_text(shape)
+
+    print(f"\n✅ Slide {slide_index + 1} updated with:")
+    print(f"   - EC2 instances: {ec2_count}")
+    print(f"   - RDS databases: {rds_count}")
+    # if total_bill_amount is not None:
+    #     print(f"   - Total Bill Amount: ${total_bill_amount:,.2f}")
 def fill_existing_table(slide, data, keys, slide_title):
     table_shape = find_table_in_slide(slide)
 
@@ -172,3 +222,81 @@ def fill_existing_table(slide, data, keys, slide_title):
 
     print(f"Successfully filled table in '{slide_title}' with {len(data)} data rows")
     return True
+
+
+def add_optimization_pie_chart(prs, slide_index, categorized_resources):
+    slide = prs.slides[slide_index]
+
+    labels = []
+    sizes = []
+    colors = ["#4CAF50", "#FFC107", "#F44336", "#9E9E9E"]
+
+    for category in ["Optimized", "Under Provisioned", "Over Provisioned", "No Recommendation"]:
+        labels.append(category)
+        sizes.append(len(categorized_resources.get(category, [])))
+
+    plt.figure(figsize=(4, 4))
+    plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%')
+    chart_path = "output/resource_distribution_pie.png"
+    plt.savefig(chart_path)
+    plt.close()
+
+    insert_image_to_slide(slide, chart_path, prs, left=Inches(0.5), top=Inches(1.5))  # Adjust if needed
+
+    # Populate textboxes for each category
+    for shape in slide.shapes:
+        if shape.has_text_frame:
+            text = shape.text_frame.text.lower()
+            for category in categorized_resources:
+                if category.lower() in text:
+                    resource_names = categorized_resources[category]
+                    shape.text_frame.clear()
+                    shape.text_frame.text = f"{category}:\n" + "\n".join(resource_names)
+
+
+def add_billing_summary_to_slide(prs, slide_index, billing_data):
+    slide = prs.slides[slide_index]
+
+    # === Generate Pie Chart ===
+    labels = list(billing_data.keys())
+    values = list(billing_data.values())
+
+    colors = plt.get_cmap('tab20').colors[:len(labels)]
+
+    fig, ax = plt.subplots()
+    wedges, texts, autotexts = ax.pie(
+        values, labels=labels, autopct='%1.1f%%',
+        startangle=90, colors=colors, textprops={'fontsize': 8}
+    )
+    ax.axis('equal')
+
+    chart_path = "output/billing_summary_pie.png"
+    plt.savefig(chart_path, bbox_inches='tight')
+    plt.close()
+
+    # === Insert Pie Chart ===
+    chart_left = Inches(5.5)
+    chart_top = Inches(1)
+    chart_width = Inches(4)
+    chart_height = Inches(4)
+
+    slide.shapes.add_picture(chart_path, chart_left, chart_top, width=chart_width, height=chart_height)
+
+    # === Add Service Name and Amount Boxes on the Left ===
+    left_x = Inches(0.5)
+    top_y = Inches(1)
+    spacing = Inches(0.5)
+
+    for idx, (service, amount) in enumerate(billing_data.items()):
+        box = slide.shapes.add_shape(
+            MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+            left_x, top_y + idx * spacing,
+            Inches(4.5), Inches(0.4)
+        )
+        box.text = f"{service}: ${amount:,.2f}"
+        text_frame = box.text_frame
+        text_frame.paragraphs[0].font.size = Pt(14)
+        text_frame.paragraphs[0].font.bold = True
+        box.fill.solid()
+        box.fill.fore_color.rgb = slide.shapes.title.fill.fore_color.rgb  # match title color if needed
+        box.line.color.rgb = box.fill.fore_color.rgb

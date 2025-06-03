@@ -1,20 +1,22 @@
-import sys
-import boto3
 import os
+import sys
+
 from pptx import Presentation
-from utils.monthly_metric import get_monthly_metrics
-from utils.plots import plot_metrics
-from utils.ppt_edit import insert_image_to_slide, update_textbox_with_resource_name
 
 from data_collectors.ec2 import get_ec2_instances_with_metrics, get_ec2_backup_metrics
-from data_collectors.rds import get_rds_instances_with_metrics, get_rds_backup_metrics
 from data_collectors.eks import get_eks_clusters_with_metrics
 from data_collectors.iam import get_iam_users_with_metrics
-
+from data_collectors.rds import get_rds_instances_with_metrics, get_rds_backup_metrics
+from utils.monthly_metric import get_monthly_metrics
+from utils.ppt_edit import add_billing_summary_to_slide
+from utils.monthly_billing import get_monthly_billing_data
+from utils.plots import plot_metrics
 from utils.ppt_edit import (
     find_slide_by_title,
     fill_existing_table,
 )
+from utils.ppt_edit import insert_image_to_slide, update_textbox_with_resource_name
+from utils.ppt_edit import update_resource_counts_on_slide
 
 
 def main(path="template/Report1.pptx", output_filename="output/AWS_Services_Report.pptx"):
@@ -35,6 +37,21 @@ def main(path="template/Report1.pptx", output_filename="output/AWS_Services_Repo
     print("\nCollecting RDS data...")
     rds_data = get_rds_instances_with_metrics()
     print(f"Found {len(rds_data)} RDS instances")
+    # Slide index for EC2 & RDS count summary (e.g., slide 2 → index 1)
+    update_resource_counts_on_slide(
+        prs,
+        slide_index=1,  # Assuming first slide
+        ec2_count=len(ec2_data),
+        rds_count=len(rds_data),
+        # total_bill_amount=total_amount  # Float value from billing
+    )
+
+    # After EC2/RDS data is collected
+    # print("\nFetching optimization classifications...")
+    # categorized_resources = get_aws_optimization_status()
+    #
+    # print("\nAdding resource classification chart to slide 9...")
+    # add_optimization_pie_chart(prs, slide_index=8, categorized_resources=categorized_resources)
 
     print("\nCollecting EKS data...")
     eks_data = get_eks_clusters_with_metrics()
@@ -177,6 +194,10 @@ def main(path="template/Report1.pptx", output_filename="output/AWS_Services_Repo
                 print(f"Error updating slide '{slide_title}': {e}")
         else:
             print(f"Could not find slide with title: '{slide_title}'")
+    # print("\nCollecting billing data...")
+    # billing_data = get_monthly_billing_data()
+    # print("Adding billing summary to slide 19...")
+    # add_billing_summary_to_slide(prs, slide_index=18, billing_data=billing_data)
 
     print(f"\nSaving presentation...")
     try:
