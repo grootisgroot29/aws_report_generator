@@ -46,12 +46,12 @@ def main(path="template/Report1.pptx", output_filename="output/AWS_Services_Repo
         # total_bill_amount=total_amount  # Float value from billing
     )
 
-    # After EC2/RDS data is collected
-    # print("\nFetching optimization classifications...")
-    # categorized_resources = get_aws_optimization_status()
-    #
-    # print("\nAdding resource classification chart to slide 9...")
-    # add_optimization_pie_chart(prs, slide_index=8, categorized_resources=categorized_resources)
+    #After EC2/RDS data is collected
+    print("\nFetching optimization classifications...")
+    categorized_resources = get_aws_optimization_status()
+
+    print("\nAdding resource classification chart to slide 9...")
+    add_optimization_pie_chart(prs, slide_index=8, categorized_resources=categorized_resources)
 
     print("\nCollecting EKS data...")
     eks_data = get_eks_clusters_with_metrics()
@@ -194,10 +194,10 @@ def main(path="template/Report1.pptx", output_filename="output/AWS_Services_Repo
                 print(f"Error updating slide '{slide_title}': {e}")
         else:
             print(f"Could not find slide with title: '{slide_title}'")
-    # print("\nCollecting billing data...")
-    # billing_data = get_monthly_billing_data()
-    # print("Adding billing summary to slide 19...")
-    # add_billing_summary_to_slide(prs, slide_index=18, billing_data=billing_data)
+    print("\nCollecting billing data...")
+    billing_data = get_monthly_billing_data()
+    print("Adding billing summary to slide 19...")
+    add_billing_summary_to_slide(prs, slide_index=18, billing_data=billing_data)
 
     print(f"\nSaving presentation...")
     try:
