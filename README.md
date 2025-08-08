@@ -58,7 +58,7 @@ aws_report_generator/
     -   `ce:GetCostAndUsage`
     -   `compute-optimizer:Get*`
     -   `sts:GetCallerIdentity`
--   (Optional) For full EC2 metric coverage (memory, disk), the [CloudWatch agent](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html) must be installed and configured on your EC2 instances to report metrics to the `CWAgent` namespace.
+-   For full EC2 metric coverage (memory, disk), the [CloudWatch agent](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html) must be installed and configured on your EC2 instances to report metrics to the `CWAgent` namespace.
 
 ## Installation
 
